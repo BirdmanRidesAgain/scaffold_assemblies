@@ -33,6 +33,7 @@ def main():
     # PARSE ARGS:
     parser = argparse.ArgumentParser()
     parser.add_argument("-f", "--fasta", help = "Supply a .fa file")
+    parser.add_argument("-p", "--prefix", default = "contig", help = "Supply a prefix to rename contigs. Default is 'contig'")
     parser.add_argument("-n", "--names", default = None, help = "Supply a TSV file of contig names. Should be formatted as <old_name>\t<new_name>. Unnamed seqs will be renamed as per '-s'")
     parser.add_argument("-o", "--out_pre", default = "stdout", help = "Writes output to path provided. If unset, output written to stdout")
     args = parser.parse_args()
@@ -68,14 +69,14 @@ def main():
         count = 1
         if args.out_pre == 'stdout':
             for i in ctg_lst:       # fasta output
-                i.name = "contig_" + str(count)
+                i.name = args.prefix + "_" + str(count)
                 print(i.dump())
                 count = count + 1
         else:
             filename = args.out_pre + '.fa'
             with open(filename, 'w') as f:
                 for i in ctg_lst:
-                    i.name = "contig_" + str(count)
+                    i.name = args.prefix + "_" + str(count)
                     print(i.dump(), file=f)
                     count = count + 1
                 f.close()    
