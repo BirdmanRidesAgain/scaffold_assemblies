@@ -1,0 +1,4 @@
+# Ignore all output and input files to renaming script
+*fa
+*fasta
+*tsv
