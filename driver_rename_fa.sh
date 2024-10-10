@@ -1,37 +1,42 @@
 #!/bin/bash
 
 # If no arguments are given, give usage and exit
-USAGE="Usage: driver_rename_fa.sh <assembly.fa>"
+USAGE="Usage: driver_rename_fa.sh <assembly.fa> <refseq.fa>"
 OUTPUTS="Outputs: a fasta file"
-if [ -z $1 ]
+if [ $# -ne 2 ]
 then
     echo -e "$USAGE\n${OUTPUTS}"
     exit 1
 fi
 
 # Get the prefix for your fasta file
-PREFIX=$(basename -s .fa $1)
-echo $PREFIX
-# Write a fasta file to the command line and check the FA
-./rename_fa.py -f $1 -o "${PREFIX}_rename"
+PREFIX_Q=$(basename -s .fa $1)
+PREFIX_REF=$(basename -s .fa $2)
 
 
-# Testing output
-echo ""
-echo "# The first line of your output should equal '>contig_1'"
-cat "${PREFIX}_rename.fa" | grep '>' | head -n 1 
+
+##### RENAME FILES #####
+# Write a fasta file to the command line and check the FA with no prefix argument
+./rename_fa.py -f $1 -o "${PREFIX_Q}_rename"
+
+# Check to see if your reference sequence has been renamed already. If not, rename it again.
+OLD_REF_CHROMNAME=$(cat $2 | head -n 1)
+if [ "$OLD_REF_CONTIG_NAME" != ">chrom_1" ]
+then
+    echo "Renaming the reference sequence. Chromosomal assembly assumed."
+    ./rename_fa.py -f $2 -o "${PREFIX_REF}_rename_refseq" -p chrom
+fi
+
+##### RUN RAGTAG #####
+# Ragtag your genome against references
+    # ragtag.py expected to be in your path. NOT activated via conda
+ragtag.py scaffold "${PREFIX_REF}_rename_refseq.fa" "${PREFIX_Q}_rename.fa" -o ${PREFIX_Q}_${PREFIX_REF}_ragtag -C # '-C' cats all the unplaced contigs and renames them 'chr0'
 exit
 
+#### Testing output
+#echo ""
+#echo "# The first line of your output should equal '>contig_1'"
+#cat "${PREFIX}_rename.fa" | grep '>' | head -n 1 
 
-#COUNT=1
-#while read -r i
-#do
-#    LINE=$(echo $i | awk -v VAR=$COUNT '$2=VAR')
-#    echo $LINE | awk '{print $1, "\t", "contig_"$2}' >> ${PREFIX}.tsv
-#    COUNT=$((${COUNT}+1))
-#done < sort2.tsv
-#
-## rerun rename_fa.py to generate the new .fa
-#./rename_fa.py -f $1 -n ${PREFIX}.tsv
-#
-##rm sort.tsv #${PREFIX}.tsv
+
+# We now need to scaffold the renamed assembly to 
