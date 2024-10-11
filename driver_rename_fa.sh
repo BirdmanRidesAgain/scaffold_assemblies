@@ -61,7 +61,6 @@ then
     RAGTAG_PATH=./RagTag/ragtag.py
     $RAGTAG_PATH scaffold "${PREFIX_REF}_rename_refseq.fa" "${PREFIX_Q}_rename.fa" -o ${PREFIX_Q}_${PREFIX_REF}_ragtag -C # '-C' cats all the unplaced contigs and renames them 'chr0'
 fi
-exit
 
 
 ##### VISUALIZE ALIGNMENT #####

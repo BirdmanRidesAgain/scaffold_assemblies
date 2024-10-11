@@ -10,14 +10,15 @@
 # Some of the base code is derived from 'get_contact_map.R'
 # The script is designed to work as part of the 'scaffold_assemblies' repo.
 # ASSUMPTIONS:
-# You take in your PAF from 'RagTag' (https://github.com/malonge/RagTag)
-# Your reference sequence has been 'cleaned', in terms of removing all unplaced scaffolds.
-# The script can find 'visualize_scaffolded_assembly_helperfunc.R', which contains useful code.
+  # You take in your PAF from 'RagTag' (https://github.com/malonge/RagTag)
+  # Your reference sequence has been 'cleaned', in terms of removing all unplaced scaffolds.
+  # The script can find 'visualize_scaffolded_assembly_helperfunc.R', which contains useful code.
 
 ###################################################
 ### PARSE ARGUMENTS ###
 ###################################################
-default_args <- list(help = FALSE,
+source("./visualize_scaffolded_assembly_helperfunc.R")
+default_args <- list(
                      paf = NULL,
                      query_lab = "Query",
                      target_lab = "Target",
@@ -25,39 +26,12 @@ default_args <- list(help = FALSE,
                      min_len = 0,
                      contig_plots = FALSE,
                      output_paf = TRUE,
-                     prefix = "output")
+                     prefix = "output"
+                     )
 
 args <- R.utils::commandArgs(trailingOnly = TRUE,
                              asValues = TRUE,
                              defaults = default_args)
-
-print_help <- function() {
-  sink(stdout(), type = "message")
-  message("\nget_contact_map.R, Keiler Collier, 28 May 2023, v.0.2.0)
-  
-  Suggested usage: get_contact_map.R --paf <input_paf> --prefix <output_prefix>
-          
-  Options: 
-          --raw: If set, all alignments are reported in the dotplot and quality filtering is not performed. Any micro/macro bounding remains.
-                 It is not recommended to set this, as secondary, short and low-mapping-quality alignments can confound interpretation.
-                 If --raw is unset (default behavior), secondary mappings, alignments under 500kbp and alignments with a mapq > 40 are removed.
-         
-          --target_lab <'Target'>: The label of the genome you are mapping the query sequences to. Defaults to 'Target'. 
-                 More generally, this is the name of your 'truth set'. Reads in Target that don't have an alignment with Query will not be included in the dotplot.
-          
-          --query_lab <'Query'>: The label of the genome that you are attempting to find matches in. Defaults to 'Query'.
-                 This is your genome-of-interest. All reads in Query will be displayed, regardless of matches with Target.
-          
-          --min_len <0>: Takes an integer value and sets the minimum alignment length for an alignment to be mapped. If unset, no micro/macro analyses will be done.
-                Defaults to 0. Suggested boundary between avian macro/microchromosomes is 10 000 000bp. (10000000)
-          
-          --contig_plots: If set, 'n' number of contig-wise alignment plots will be written, where 'n' is the number of high-quality plots in 'Query'.
-                IT IS NOT RECOMMENDED TO RUN THIS WITH --raw.
-          --output_paf: This option outputs a csv of all filtered/plotted alignments. Turned on by default.
-          ")
-  sink(NULL, type = "message")
-  quit()
-}
 
 # Sanity check for required inputs:
 if (is.null(args$paf)) {
@@ -71,41 +45,9 @@ if (is.null(args$paf)) {
 ### CHECKS FOR ALL NECESSARY PACKAGES ###
 ###################################################
 ### CHECK AND LOAD LIBS
-check_installed_libs <- function(libs) {
-  message("Checking for uninstalled libraries...")
-  new_libs <- libs[!(libs %in% installed.packages()[,"Package"])]
-  if(length(new_libs)) {
-    message("Missing packages found. Installing.")
-    install.packages(new_libs)
-  }
-  message("")
-}
-lib_load <- function(libs) {
-  # Function to smooth out library loading process
-  message("Loading libraries:")
-  for (i in 1:length(libs)) { 
-    suppressPackageStartupMessages(library(libs[i], character.only = TRUE))
-    message(paste("\t",toString(libs[i]),"successfully loaded"))
-  }
-  message("All packages loaded\n")
-}
-
 libs <- c("pafr", "ggplot2", "magrittr", "dplyr", "stringr", "scales", "readr") # list of libs
-# Load libraries present in system
 check_installed_libs(libs)
 lib_load(libs)
-
-print_params <- function(args) {
-  message("User-defined parameters:")
-  
-  for (i in 1:length(args)) {
-    name <- names(args[i])
-    if (!name == "") {
-      message(stringr::str_c("\t",name, ": ", toString(args[i])))
-    }
-  }
-  message("")
-}
 print_params(args)
 
 
@@ -114,10 +56,11 @@ print_params(args)
 ###################################################
 # Read in PAF
 message("Reading in Pairwise mApping Format (PAF): ")
-paf <- pafr::read_paf(args$paf) # FIXME - re-filtering with a PAF already run through this program results in problems
-# Filter PAF, if 'raw' is unset (default behavior):
-# removes secondary alignments, alignments under 500 000 bp, and alignments with mapq under 40 are removed.
 
+paf <- pafr::read_paf(args$paf) # FIXME - re-filtering with a PAF already run through this program results in problems
+
+# Filter PAF, if 'raw' is unset (default behavior):
+  # removes secondary alignments, alignments under 500 000 bp, and alignments with mapq under 40 are removed.
 if (args$raw == FALSE) {
   min_clean_aln_len = 5e5 #500000 bp. 
   # Reasonable for most chromosomal-level arrangements; may exclude a couple of micro
@@ -128,23 +71,9 @@ paf <- dplyr::arrange(paf, desc(qlen)) # sort by size
 
 # Write CSV of filtered alignments
 if (args$output_paf){
-  write_paf <- function(paf_df = paf) {
-    # Have to relabel the data frame's columns to it works downstream
-    paf_formatted <- paf_df %>% 
-      dplyr::mutate(tp = stringr::str_c("tp:A:",tp),
-                    cm = stringr::str_c("cm:i:",cm),
-                    s2 = stringr::str_c("s2:i:",s2),
-                    dv = stringr::str_c("dv:f:",dv),
-                    rl = stringr::str_c("rl:i:",rl))
-    readr::write_delim(x = dplyr::as_tibble(paf_formatted), 
-                       file = stringr::str_c(args$prefix,"alignments.paf", sep = "_"), 
-                       delim = "\t",
-                       append = FALSE,
-                       col_names = FALSE)
-  }
   write_paf(paf) # We've defined write_paf as a function so we're not storing an extra data frame anywhere in the main function
 }
-
+quit()
 ###################################################
 ### PLOT ALIGNMENTS ###
 ###################################################
