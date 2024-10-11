@@ -11,6 +11,7 @@
 ###################################################
 ### HELPER FUNCTIONS
 ###################################################
+# 'Housekeeping' functions
 print_help <- function() {
   sink(stdout(), type = "message")
   message("\nget_contact_map.R, Keiler Collier, 28 May 2023, v.0.2.0)
@@ -38,7 +39,6 @@ print_help <- function() {
   sink(NULL, type = "message")
   quit()
 }
-
 check_installed_libs <- function(libs) {
   message("Checking for uninstalled libraries...")
   new_libs <- libs[!(libs %in% installed.packages()[,"Package"])]
@@ -48,7 +48,6 @@ check_installed_libs <- function(libs) {
   }
   message("")
 }
-
 lib_load <- function(libs) {
   # Function to smooth out library loading process
   message("Loading libraries:")
@@ -58,7 +57,6 @@ lib_load <- function(libs) {
   }
   message("All packages loaded\n")
 }
-
 print_params <- function(args) {
   message("User-defined parameters:")
   
@@ -69,4 +67,20 @@ print_params <- function(args) {
     }
   }
   message("")
+}
+
+# 'Output' functions
+write_paf <- function(paf_df = paf) {
+  # Have to relabel the data frame's columns to it works downstream
+  paf_formatted <- paf_df %>% 
+    dplyr::mutate(tp = stringr::str_c("tp:A:",tp),
+                  cm = stringr::str_c("cm:i:",cm),
+                  s2 = stringr::str_c("s2:i:",s2),
+                  dv = stringr::str_c("dv:f:",dv),
+                  rl = stringr::str_c("rl:i:",rl))
+  readr::write_delim(x = dplyr::as_tibble(paf_formatted), 
+                     file = stringr::str_c(args$prefix,"alignments.paf", sep = "_"), 
+                     delim = "\t",
+                     append = FALSE,
+                     col_names = FALSE)
 }
