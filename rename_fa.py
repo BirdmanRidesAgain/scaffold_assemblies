@@ -62,6 +62,21 @@ def main():
 
 
     #--------------------------------------------
+    # Scan for 'unplaced' contigs/chroms and remove from the list
+    #--------------------------------------------
+    unplaced_keywords = ['unanchor', 'unplace', 'unscaffold']
+    unplaced_ctgs = []
+    for i in ctg_lst:
+        for j in unplaced_keywords:
+            if j in i.name:
+                unplaced_ctgs.append(i) # gets a list of unplaced scaffolds probably
+    
+    # Use list comprehension to remove contigs
+    len(ctg_lst)
+    ctg_lst = [i for i in ctg_lst if i not in unplaced_ctgs]
+    len(ctg_lst) 
+    
+    #--------------------------------------------
     # If no TSV argument is given, rename all contigs according to 'contig_<num>' and return a fasta
     #--------------------------------------------
     if (args.names == None):
@@ -81,7 +96,7 @@ def main():
                     count = count + 1
                 f.close()    
                 
-    return 0
+    return 0 # current end of the main function. We're not screwing with the TSV code.
     print("You should not see this")             
                 
 
